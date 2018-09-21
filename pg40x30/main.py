@@ -40,15 +40,29 @@ def main():
     # -----------------
     # Handlers
     # -----------------
-    # channel_handler = MessageHandler(own_filters.ChannelFilter, leave_chat)
+    # Start
     start_handler = CommandHandler(translate_all("startCmd"), userCommands.start)
+
+    # User creation
     register_handler = CommandHandler(translate_all("registerCmd"), userCommands.addUser)
-    confirmation_handler = CallbackQueryHandler(userCommands.confirmNewUser, pass_chat_data=True)
+    confirmation_handler = CallbackQueryHandler(userCommands.confirmNewUser)
+
+    # User List
+    getRegisteredUsers_handler = CommandHandler(translate_all("usersCmd"), userCommands.getRegisteredUsers)
+
+    # Alerts
+    alert_handler = CommandHandler(translate_all("alertCmd"), userCommands.addAlertToUserProfile)
+    saveAlert_handler = CallbackQueryHandler(userCommands.saveAlertToUserProfile)
+
+    # User profile
+    profile_handler = CommandHandler(translate_all("userProfileCmd"), userCommands.getUserProfle)
+    showProfile_handler = CallbackQueryHandler(userCommands.showUserProfile)
+
     # stop_handler = CommandHandler(translate_all("stopCmd"), stop_cmd)
     # join_handler = CommandHandler(translate_all("join"), join_cmd)
     # help_handler = CommandHandler('help', help_cmd)
     # hide_handler = CommandHandler('hide', hide_cmd)
-    getRegisteredUsers_handler = CommandHandler(translate_all("usersCmd"), userCommands.getRegisteredUsers)
+
     # language_handler = CommandHandler('language', language_cmd)
     # comment_handler = CommandHandler('comment', comment_cmd, pass_args=True)
     # callback_handler = CallbackQueryHandler(callback_eval)
@@ -61,9 +75,17 @@ def main():
     # mp_handler = CommandHandler('multiplayer', multiplayer)
     # join_sec = CommandHandler('join_secret', join_secret)
     dispatcher.add_handler(start_handler)
+
     dispatcher.add_handler(register_handler)
     dispatcher.add_handler(confirmation_handler)
+
     dispatcher.add_handler(getRegisteredUsers_handler)
+
+    dispatcher.add_handler(alert_handler)
+    dispatcher.add_handler(saveAlert_handler)
+
+    dispatcher.add_handler(profile_handler)
+    dispatcher.add_handler(showProfile_handler)
     # dispatcher.add_handler(callback_handler)
 
     updater.start_polling()

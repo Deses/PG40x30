@@ -34,13 +34,30 @@ def getUserKeyboard():
         InlineKeyboardButton(text=translate("cancelMsg"), callback_data="cancel")
     ]
 
-    # button_list = [[InlineKeyboardButton(text=user, callback_data="join_game")] for user in userNumbers]
     reply_mrk = InlineKeyboardMarkup(
         build_menu(buttons, n_cols=4, footer_buttons=lastRowButton),
-        one_time_keyboard=False
+        one_time_keyboard=True
     )
-    # update.message.reply_text(reply_msg, reply_markup=reply_mrk)
 
-    # keyboard = InlineKeyboardMarkup(reply_mrk, one_time_keyboard=True)
-    # return keyboard
+    return reply_mrk
+
+
+def getProfileKeyboard():
+    stringList = [translate("alertMsg1"), translate("alertMsg2"), translate("alertMsg3"), translate("alertMsg4")]
+
+    buttons = list()
+    for index, value in enumerate(stringList):
+        buttons.append(
+            InlineKeyboardButton(text=value, callback_data=index)
+        )
+
+    lastRowButton = [
+        InlineKeyboardButton(text=translate("cancelMsg"), callback_data="cancel")
+    ]
+
+    reply_mrk = InlineKeyboardMarkup(
+        build_menu(buttons, n_cols=1, footer_buttons=lastRowButton),
+        one_time_keyboard=True
+    )
+
     return reply_mrk

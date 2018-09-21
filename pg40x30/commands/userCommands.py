@@ -13,6 +13,20 @@ logger = logging.getLogger(__name__)
 
 
 # **************
+# Tools
+# **************
+def deleteMessage(bot, update, quantity=0):
+    if update.callback_query is not None:
+        upd = update.callback_query
+    elif update is not None:
+        upd = update
+
+    bot.delete_message(chat_id=upd.message.chat_id,
+                       message_id=upd.message.message_id - quantity
+                       )
+
+
+# **************
 # User commands
 # **************
 def start(bot, update):
@@ -22,9 +36,7 @@ def start(bot, update):
                     text=text,
                     parse_mode=ParseMode.HTML
                     )
-    bot.delete_message(chat_id=update.message.chat_id,
-                       message_id=update.message.message_id
-                       )
+    deleteMessage(bot, update)
 
 
 def addUser(bot, update):
@@ -36,27 +48,24 @@ def addUser(bot, update):
                     parse_mode=ParseMode.HTML,
                     reply_markup=keyboard
                     )
-    bot.delete_message(chat_id=update.message.chat_id,
-                       message_id=update.message.message_id
-                       )
+    deleteMessage(bot, update)
 
 
-def confirmNewUser(bot, update, chat_data):
+def confirmNewUser(bot, update):
     query = update.callback_query
 
     if query.data == "cancel":
-        bot.delete_message(chat_id=query.message.chat_id,
-                           message_id=query.message.message_id)
+        deleteMessage(bot, update)
     else:
         user = query.from_user
         try:
             db = DBwrapper.get_instance()
             db.add_user(user.id, user.first_name, user.last_name, user.username, query.data, user.language_code)
         except Exception as ex:
-            logger.error("An error has occurred while adding an user!", ex)
+            logger.error("confirmNewUser - An error has occurred while adding an user!", ex)
         else:
-            text = translate("registryConfirmationMsg")
-            bot.edit_message_text(text=text.format(user.username, query.data),
+            text = translate("registryConfirmationMsg").format(user.username, query.data)
+            bot.edit_message_text(text=text,
                                   parse_mode=ParseMode.HTML,
                                   chat_id=query.message.chat_id,
                                   message_id=query.message.message_id)
@@ -77,7 +86,77 @@ def getRegisteredUsers(bot, update):
     finalString += '\n'.join(formatedUserList)
     finalString += "\n\n" + footer
 
-    update.message.reply_text(
-        text=finalString,
-        parse_mode=ParseMode.HTML,
-    )
+    bot.sendMessage(chat_id=update.message.chat_id,
+                    message_id=update.message.message_id,
+                    text=finalString,
+                    parse_mode=ParseMode.HTML,
+                    )
+    deleteMessage(bot, update)
+
+
+def addAlertToUserProfile(bot, update):
+    user = update.effective_user
+
+    text = translate("alertMsg").format(user.username)
+    keyboard = keyboards.getProfileKeyboard()
+    bot.sendMessage(chat_id=update.message.chat_id,
+                    message_id=update.message.message_id,
+                    text=text,
+                    parse_mode=ParseMode.HTML,
+                    reply_markup=keyboard
+                    )
+
+    deleteMessage(bot, update)
+
+
+def saveAlertToUserProfile(bot, update):
+    query = update.callback_query
+
+    if query.data == "cancel":
+        deleteMessage(bot, update)
+    else:
+        user = query.from_user
+        try:
+            db = DBwrapper.get_instance()
+            db.add_user_profile(user.id, query.data)
+        except Exception as ex:
+            logger.error("saveAlertToUserProfile - An error has occurred while saving a profile!", ex)
+        else:
+            text = translate("alertConfirmationMsg").fomat(user.username)
+            bot.edit_message_text(text=text,
+                                  parse_mode=ParseMode.HTML,
+                                  chat_id=query.message.chat_id,
+                                  message_id=query.message.message_id)
+
+
+def getUserProfle(bot, update):
+    text = translate("userInfoMsg")
+    keyboard = keyboards.getUserKeyboard()
+    bot.sendMessage(chat_id=update.message.chat_id,
+                    message_id=update.message.message_id,
+                    text=text,
+                    parse_mode=ParseMode.HTML,
+                    reply_markup=keyboard
+                    )
+
+    deleteMessage(bot, update)
+
+
+def showUserProfile(bot, update):
+    query = update.callback_query
+
+    if query.data == "cancel":
+        deleteMessage(bot, update)
+    else:
+        user = query.from_user
+        try:
+            db = DBwrapper.get_instance()
+            userProfiles = db.get_user_profile()
+        except Exception as ex:
+            logger.error("showUserProfile - An error has occurred while getting  an user profile!", ex)
+        else:
+            text = translate("registryConfirmationMsg")
+            bot.edit_message_text(text=text.format(user.username, query.data),
+                                  parse_mode=ParseMode.HTML,
+                                  chat_id=query.message.chat_id,
+                                  message_id=query.message.message_id)

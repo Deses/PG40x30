@@ -106,3 +106,7 @@ venv.bak/
 pg40x30/constants/\.api_key
 
 \.idea/
+
+pg40x30/test\.py
+
+pg40x30/database/pg4030_database\.db

@@ -16,8 +16,8 @@ class DBwrapper(object):
                 logger.warning("File '" + database_path + "' does not exist! Trying to create one.")
                 try:
                     self.create_database(database_path)
-                except Exception:
-                    logger.error("An error has occurred while creating the database!")
+                except Exception as ex:
+                    logger.error("An error has occurred while creating the database!", ex)
 
             self.connection = sqlite3.connect(database_path)
             self.connection.text_factory = lambda x: str(x, 'utf-8', "ignore")
@@ -39,24 +39,30 @@ class DBwrapper(object):
             #                "PRIMARY KEY('userID'));")
 
             cursor.execute("CREATE TABLE 'users'"
-                           "('id' INTEGER NOT NULL" + ","
+                           "('userID' INTEGER NOT NULL" + ","
                            "'first_name' TEXT" + ","
                            "'last_name' TEXT" + ","
-                           "'username' TEXT" + ","
+                           "'username' TEXT NOT NULL" + ","
                            "'number' INTEGER NOT NULL" + ","
                            "'language_code' TEXT"
                            ");")
 
+            cursor.execute("CREATE TABLE 'user_profile'"
+                           "('alertID' INTEGER NOT NULL" + ","
+                           "'userID' INTEGER NOT NULL" + ","
+                           "'alert' NUMERIC" + ","
+                           "PRIMARY KEY('alertID'));")
+
             connection.commit()
             connection.close()
 
-        def add_user(self, id: int, first_name: str, last_name: str, username: str, number: int, language_code: str) -> None:
+        def add_user(self, userID: int, first_name: str, last_name: str, username: str, number: int, language_code: str) -> None:
             try:
                 self.cursor.execute("INSERT INTO users VALUES (?, ?, ?, ?, ?, ?);",
-                                    (id, first_name, last_name, username, number, language_code))
+                                    (userID, first_name, last_name, username, number, language_code))
                 self.connection.commit()
-            except sqlite3.IntegrityError:
-                logger.error("An error has occurred while adding an user!")
+            except sqlite3.IntegrityError as ex:
+                logger.error("An error has occurred while adding an user!", ex)
 
         def get_user(self, user_id: int) -> tuple:
             self.cursor.execute("SELECT * FROM users WHERE userID=?;", [str(user_id)])
@@ -65,7 +71,6 @@ class DBwrapper(object):
             if result:
                 if len(result) > 0:
                     return result
-
             return ()
 
         def get_all_users(self) -> list:
@@ -76,6 +81,22 @@ class DBwrapper(object):
             self.cursor.execute("SELECT number FROM users;")
             return self.cursor.fetchall()
 
+        def add_user_profile(self, userID: int, alert: int) -> None:
+            try:
+                self.cursor.execute("INSERT INTO user_profile VALUES (userID, alert);",
+                                    (userID, alert))
+                self.connection.commit()
+            except sqlite3.IntegrityError as ex:
+                logger.error("An error has occurred while adding user info!", ex)
+
+        # def update_user_profile(self, value: str, user_id: int) -> None:
+        #     self.cursor.execute("UPDATE user_profile SET alert = ? WHERE userID = ?;",
+        #                         [value, str(user_id)])
+        #     self.connection.commit()
+
+        def get_user_profile(self) -> list:
+            self.cursor.execute("SELECT rowid, * FROM user_profile JOIN users USING(userID) ORDER BY number ASC;")
+            return self.cursor.fetchall()
         # def get_recent_players(self):
         #     one_day_in_secs = 60 * 60 * 24
         #     current_time = int(time())
