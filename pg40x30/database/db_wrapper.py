@@ -10,7 +10,7 @@ class DBwrapper(object):
         dir_path = os.path.dirname(os.path.abspath(__file__))
 
         def __init__(self):
-            database_path = os.path.join(self.dir_path, "users.db")
+            database_path = os.path.join(self.dir_path, "pg4030_database.db")
 
             if not os.path.exists(database_path):
                 logger.warning("File '" + database_path + "' does not exist! Trying to create one.")
@@ -32,20 +32,31 @@ class DBwrapper(object):
             connection.text_factory = lambda x: str(x, 'utf-8', "ignore")
             cursor = connection.cursor()
 
-            cursor.execute("CREATE TABLE 'admins' "
-                           "('userID' INTEGER NOT NULL,"
-                           "'name' TEXT,"
-                           "'tgUsername' TEXT,"
-                           "PRIMARY KEY('userID'));")
+            # cursor.execute("CREATE TABLE 'admins' "
+            #                "('userID' INTEGER NOT NULL,"
+            #                "'name' TEXT,"
+            #                "'tgUsername' TEXT,"
+            #                "PRIMARY KEY('userID'));")
 
             cursor.execute("CREATE TABLE 'users'"
-                           "('userID' INTEGER NOT NULL,"
-                           "'name' TEXT NOT NULL,"
-                           "'tgUsername' TEXT NOT NULL,"
-                           "'languageID' TEXT"
+                           "('id' INTEGER NOT NULL" + ","
+                           "'first_name' TEXT" + ","
+                           "'last_name' TEXT" + ","
+                           "'username' TEXT" + ","
+                           "'number' INTEGER NOT NULL" + ","
+                           "'language_code' TEXT"
                            ");")
+
             connection.commit()
             connection.close()
+
+        def add_user(self, id: int, first_name: str, last_name: str, username: str, number: int, language_code: str) -> None:
+            try:
+                self.cursor.execute("INSERT INTO users VALUES (?, ?, ?, ?, ?, ?);",
+                                    (id, first_name, last_name, username, number, language_code))
+                self.connection.commit()
+            except sqlite3.IntegrityError:
+                logger.error("An error has occurred while adding an user!")
 
         def get_user(self, user_id: int) -> tuple:
             self.cursor.execute("SELECT * FROM users WHERE userID=?;", [str(user_id)])
@@ -56,6 +67,14 @@ class DBwrapper(object):
                     return result
 
             return ()
+
+        def get_all_users(self) -> list:
+            self.cursor.execute("SELECT rowid, * FROM users ORDER BY number ASC;")
+            return self.cursor.fetchall()
+
+        def get_used_numbers(self) -> list:
+            self.cursor.execute("SELECT number FROM users;")
+            return self.cursor.fetchall()
 
         # def get_recent_players(self):
         #     one_day_in_secs = 60 * 60 * 24
@@ -77,17 +96,15 @@ class DBwrapper(object):
         #     else:
         #         return 0
 
-        def get_all_users(self) -> list:
-            self.cursor.execute("SELECT rowid, * FROM users;")
-            return self.cursor.fetchall()
 
-        def get_admins(self) -> list:
-            self.cursor.execute("SELECT userID from admins;")
-            admins = self.cursor.fetchall()
-            admin_list = []
-            for admin in admins:
-                admin_list.append(admin[0])
-            return admin_list
+
+        # def get_admins(self) -> list:
+        #     self.cursor.execute("SELECT userID from admins;")
+        #     admins = self.cursor.fetchall()
+        #     admin_list = []
+        #     for admin in admins:
+        #         admin_list.append(admin[0])
+        #     return admin_list
 
         def get_lang_id(self, user_id: int) -> str:
             self.cursor.execute("SELECT languageID FROM users WHERE userID=?;", [str(user_id)])
@@ -97,13 +114,7 @@ class DBwrapper(object):
             else:
                 return "en"
 
-        def add_user(self, user_id: int, name: str, tgUsername: str, lang_id: str) -> None:
-            try:
-                self.cursor.execute("INSERT INTO users VALUES (?, ?, ?, ?);",
-                                    (str(user_id), name, tgUsername, lang_id))
-                self.connection.commit()
-            except sqlite3.IntegrityError:
-                logger.error("An error has occurred while adding an user!")
+
 
         def insert(self, column_name: str, value: str, user_id: int) -> None:
             self.cursor.execute("UPDATE users SET " + column_name + "= ? WHERE userID = ?;",
